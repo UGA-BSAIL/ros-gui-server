@@ -9,6 +9,7 @@ project(ros_gui_server)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   nav_msgs
+  sensor_msgs
   roscpp
   rospy
   std_msgs
@@ -52,15 +53,13 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   OdomArray.msg
-  ## Message2.msg
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  OdomConversion.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -72,7 +71,9 @@ add_message_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
-  nav_msgs#   std_msgs
+  std_msgs
+  nav_msgs
+  sensor_msgs
 )
 
 ################################################
@@ -161,10 +162,10 @@ include_directories(
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(PROGRAMS
+  scripts/odom_converter_server.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
