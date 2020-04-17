@@ -1,0 +1,8 @@
+# Goal definition, in this case, an integer to specify how many samples we want to take of Odometry data before storing it
+uint32 samples
+---
+# Result definition, in this case, a ROS timestamp to specify the time of Odometry capture
+bool exit_status
+---
+# Feedback definition, in this case, a progress percentage for number of samples completed
+float32 percent_complete

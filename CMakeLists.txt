@@ -12,6 +12,9 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   roscpp
   rospy
+  genmsg 
+  actionlib_msgs
+  actionlib
   std_msgs
   message_generation
 )
@@ -56,21 +59,22 @@ add_message_files(
 )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  OdomConversion.srv
-)
+#add_service_files(
+#  FILES
+#)
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+add_action_files(
+  DIRECTORY
+  action
+  FILES
+  OdomCapture.action
+)
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
+  actionlib_msgs
   std_msgs
   nav_msgs
   sensor_msgs
@@ -163,7 +167,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 install(PROGRAMS
-  scripts/odom_converter_server.py
+  scripts/ros_gui_server.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
