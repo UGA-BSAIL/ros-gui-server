@@ -2,20 +2,20 @@ cmake_minimum_required(VERSION 2.8.3)
 project(ros_gui_server)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  std_msgs
   nav_msgs
   sensor_msgs
   roscpp
   rospy
-  genmsg 
+  genmsg
   actionlib_msgs
   actionlib
-  std_msgs
   message_generation
 )
 
@@ -111,8 +111,8 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES ros_gui_server
-CATKIN_DEPENDS message_runtime nav_msgs roscpp rospy std_msgs
+  LIBRARIES ros_gui_server
+CATKIN_DEPENDS message_runtime genmsg std_msgs nav_msgs sensor_msgs actionlib_msgs actionlib roscpp rospy 
 #  DEPENDS system_lib
 )
 
@@ -167,7 +167,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 install(PROGRAMS
-  scripts/ros_gui_server.py
+  scripts/gui_server.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
