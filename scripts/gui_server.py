@@ -31,8 +31,6 @@ class gui_server():
         # Starting actions
         self.odomCaptureServer.start()
 
-        print "object is constructed"
-
     # Callback method for our nav_msgs/Odometry subscriber
     def odomRecieveCallback(self, data):
 
@@ -77,6 +75,7 @@ class gui_server():
             success = (self.odomArray[len(self.odomArray) - 1].header.stamp == appendOdom.header.stamp)
             self._odomCaptureResult.exit_status = success
             rospy.loginfo('%s: Succeeded' % self.capture_action_name)
+            self.odomArrayPrint()
             self.odomCaptureServer.set_succeeded(self._odomCaptureResult)
 
         # else: # an arbitrary number of samples >1 is to be taken, averaging their values (pose, twist, and their corresponding covariances)
@@ -173,11 +172,15 @@ class gui_server():
         #         self.odomCaptureServer.set_succeeded(self._odomCaptureResult)
     
     def odomArrayPrint(self):
-        for i in self.odomArray:
-            printOdom = self.odomArray[i]
-            printStr = str(i) + ":\n\n" + "header:\n    seq: " + str(printOdom.header.seq) + "\n    stamp: " + str(printOdom.header.stamp) + "\n    frame_id: " + printOdom.header.frame_id + "\nchild_frame_id: " + printOdom.child_frame_id \
-            "\npose:\n    pose:"
 
+        for i in range(len(self.odomArray)):
+            printOdom = self.odomArray[i]
+            printStr = str(i) + ":\n\n   header:\n    seq: " + str(printOdom.header.seq) + "\n    stamp: " + str(printOdom.header.stamp) + "\n    frame_id: " + printOdom.header.frame_id + "\n   child_frame_id: " + printOdom.child_frame_id \
+            + "\n   pose:\n    pose:\n        position:\n            x: " + str(printOdom.pose.pose.position.x) + "\n            y: " + str(printOdom.pose.pose.position.y) + "\n            z: " + str(printOdom.pose.pose.position.z) \
+            + "\n        orientation:\n            x: " + str(printOdom.pose.pose.orientation.x) + "\n            y: " + str(printOdom.pose.pose.orientation.y) + "\n            z: " + str(printOdom.pose.pose.orientation.z) + "\n            w: " + str(printOdom.pose.pose.orientation.w) \
+            + "\n   twist:\n    twist:\n        linear:\n            x: " + str(printOdom.twist.twist.linear.x) + "\n            y: " + str(printOdom.twist.twist.linear.y) + "\n            z: " + str(printOdom.twist.twist.linear.z) \
+            + "\n        angular:\n            x: " + str(printOdom.twist.twist.angular.x) + "\n            y: " + str(printOdom.twist.twist.angular.y) + "\n            z: " + str(printOdom.twist.twist.angular.z) + "\n\n"
+            print printStr
 
 
 def main():
