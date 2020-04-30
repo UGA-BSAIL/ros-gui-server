@@ -17,15 +17,21 @@ class gui_server():
     _odomCaptureResult = ros_gui_server.msg.OdomCaptureResult()
 
     # Initialization Function
-    def __init__(self):
+    def __init__(self, argv):
 
         # Initializing class variables
         self.currentOdom = Odometry()
         self.odomArray = []
         self.capture_action_name = "/odom_capture"
 
+        # Command Line Arguments
+        if len(argv) > 1:
+            self.odometryTopic = argv[1]
+        else:
+            self.odometryTopic = "/odometry/filtered"
+
         # Subscriptions and action setup
-        self.odomSubscriber = rospy.Subscriber("/odometry/filtered", Odometry, self.odomRecieveCallback) # Subscribe the the Odometry topic for Odometry message recieving
+        self.odomSubscriber = rospy.Subscriber(self.odometryTopic, Odometry, self.odomRecieveCallback) # Subscribe the the Odometry topic for Odometry message recieving
         self.odomCaptureServer = actionlib.SimpleActionServer(self.capture_action_name, ros_gui_server.msg.OdomCaptureAction, execute_cb=self.odomCaptureCallback, auto_start=False) # Setup Odometry Capture server for recording /nav_msgs/Odometry messages on demand
         
         # Starting actions
@@ -180,14 +186,14 @@ class gui_server():
             + "\n        orientation:\n            x: " + str(printOdom.pose.pose.orientation.x) + "\n            y: " + str(printOdom.pose.pose.orientation.y) + "\n            z: " + str(printOdom.pose.pose.orientation.z) + "\n            w: " + str(printOdom.pose.pose.orientation.w) \
             + "\n   twist:\n    twist:\n        linear:\n            x: " + str(printOdom.twist.twist.linear.x) + "\n            y: " + str(printOdom.twist.twist.linear.y) + "\n            z: " + str(printOdom.twist.twist.linear.z) \
             + "\n        angular:\n            x: " + str(printOdom.twist.twist.angular.x) + "\n            y: " + str(printOdom.twist.twist.angular.y) + "\n            z: " + str(printOdom.twist.twist.angular.z) + "\n\n"
-            print printStr
+            rospy.loginfo(printStr)
 
 
-def main():
-    rospy.init_node('gui_server') # init node
-    server = gui_server()
+def main(args):
+    rospy.init_node('robot_gui_server') # init node
+    server = gui_server(args)
     print "gui_server is ready to serve!"
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
     rospy.spin()
