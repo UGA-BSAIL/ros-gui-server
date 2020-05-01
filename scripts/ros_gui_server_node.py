@@ -9,7 +9,8 @@ import roslib
 import actionlib
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PoseStamped
+from move_base_msgs.msg import MoveBaseAction, MoveBaseActionFeedback, MoveBaseActionGoal, MoveBaseActionResult, MoveBaseGoal, MoveBaseResult
 import ros_gui_server.msg
 
 class gui_server():
@@ -19,6 +20,8 @@ class gui_server():
     _odomCaptureResult = ros_gui_server.msg.OdomCaptureResult()
     _odomClearFeedback = ros_gui_server.msg.OdomClearFeedback()
     _odomClearResult = ros_gui_server.msg.OdomClearResult()
+    _odomMoveFeedback = ros_gui_server.msg.MoveToMarkersFeedback()
+    _odomMoveResult = ros_gui_server.msg.MoveToMarkersResult()
 
     # Initialization Function
     def __init__(self, argv):
@@ -28,6 +31,7 @@ class gui_server():
         self.odomArray = []
         self.capture_action_name = "/ros_gui_server/odom_capture"
         self.clear_action_name = "/ros_gui_server/odom_clear"
+        self.move_action_name = "/ros_gui_server/move_to_markers"
 
         # Set up persistent Point array for passing to new messages 
         self.points = []
@@ -38,15 +42,19 @@ class gui_server():
         else:
             self.odometryTopic = "/odometry/filtered"
 
-        # Subscriber, Publisher and Action Server setup
+        # Subscriber, Publisher and Action Server/Client setup
         self.odomSubscriber = rospy.Subscriber(self.odometryTopic, Odometry, self.odomRecieveCallback) # Subscribe the the Odometry topic for Odometry message recieving
         self.odomCaptureServer = actionlib.SimpleActionServer(self.capture_action_name, ros_gui_server.msg.OdomCaptureAction, execute_cb=self.odomCaptureCallback, auto_start=False) # Setup Odometry Capture server for recording /nav_msgs/Odometry messages on demand
         self.odomClearServer = actionlib.SimpleActionServer(self.clear_action_name, ros_gui_server.msg.OdomClearAction, execute_cb=self.odomClearCallback, auto_start=False) # Setup Odometry Clear server for clearing all odometry entries
+        self.moveToMarkersServer = actionlib.SimpleActionServer(self.move_action_name, ros_gui_server.msg.MoveToMarkersAction, execute_cb=self.moveToMarkersCallback, auto_start=False) # Setup move to markers server for providing move_base functionality
+        self.moveBaseClient = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         self.rvizMarkerServer = rospy.Publisher("/ros_gui_server/marker_server", Marker, queue_size=10)
         
         # Starting actions
         self.odomCaptureServer.start()
         self.odomClearServer.start()
+        self.moveToMarkersServer.start()
+        self.moveBaseClient.wait_for_server()
 
     # Callback method for our nav_msgs/Odometry subscriber
     def odomRecieveCallback(self, data):
@@ -177,6 +185,48 @@ class gui_server():
             rospy.loginfo('%s: Succeeded' % self.clear_action_name)
             self._odomClearResult.exit_status = True
             self.odomClearServer.set_succeeded(self._odomClearResult)
+    
+    def moveToMarkersCallback(self, data):
+
+        # Determine if there are any markers to move to
+        if len(self.odomArray) < 1:
+
+            # if there are not points in the array, do nothing and pass an exit failure
+            
+            # Feedback publish
+            self._odomMoveFeedback.percent_complete = 0.00
+            self.moveToMarkersServer.publish_feedback(self._odomMoveFeedback)
+
+            # complete action callback
+            rospy.loginfo('%s: Failed: No Markers to move to' % self.move_action_name)
+            self._odomMoveResult.exit_status = False
+            self.moveToMarkersServer.set_aborted(self._odomMoveResult)
+
+        else:
+
+            # Send Goals and wait for feedback
+            for num,name in enumerate (self.odomArray):
+
+                # Time this goal was sent
+                time = rospy.get_rostime()
+
+                # Init MoveBaseGoal
+                goal = MoveBaseGoal()
+                goal.target_pose.header.frame_id = name.header.frame_id
+                goal.target_pose.header.stamp = time
+                goal.target_pose.pose = name.pose.pose
+
+                # send the goal
+                self.moveBaseClient.send_goal_and_wait(goal)
+
+                # send feedback to client
+                self._odomMoveFeedback.percent_complete = num/len(self.odomArray)
+                self.moveToMarkersServer.publish_feedback(self._odomMoveFeedback)
+            
+            # If we get here, all of our sent goals succedded, and so did we! Complete action callback
+            rospy.loginfo('%s: Succeeded' % self.move_action_name)
+            self._odomMoveResult.exit_status = True
+            self.moveToMarkersServer.set_succeeded(self._odomMoveResult)
 
 
     def odomArrayPrint(self):

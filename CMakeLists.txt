@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   nav_msgs
   sensor_msgs
+  move_base_msgs
   visualization_msgs
   roscpp
   rospy
@@ -71,11 +72,13 @@ add_action_files(
   FILES
   OdomCapture.action
   OdomClear.action
+  MoveToMarkers.action
 )
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
+  move_base_msgs
   actionlib_msgs
   visualization_msgs
   std_msgs
