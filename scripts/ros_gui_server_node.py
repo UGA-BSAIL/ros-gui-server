@@ -17,6 +17,8 @@ class gui_server():
     # create messages that are used to publish feedback/result
     _odomCaptureFeedback = ros_gui_server.msg.OdomCaptureFeedback()
     _odomCaptureResult = ros_gui_server.msg.OdomCaptureResult()
+    _odomClearFeedback = ros_gui_server.msg.OdomClearFeedback()
+    _odomClearResult = ros_gui_server.msg.OdomClearResult()
 
     # Initialization Function
     def __init__(self, argv):
@@ -25,6 +27,7 @@ class gui_server():
         self.currentOdom = Odometry()
         self.odomArray = []
         self.capture_action_name = "/ros_gui_server/odom_capture"
+        self.clear_action_name = "/ros_gui_server/odom_clear"
 
         # Set up persistent Point array for passing to new messages 
         self.points = []
@@ -35,13 +38,15 @@ class gui_server():
         else:
             self.odometryTopic = "/odometry/filtered"
 
-        # Subscriptions and action setup
+        # Subscriber, Publisher and Action Server setup
         self.odomSubscriber = rospy.Subscriber(self.odometryTopic, Odometry, self.odomRecieveCallback) # Subscribe the the Odometry topic for Odometry message recieving
         self.odomCaptureServer = actionlib.SimpleActionServer(self.capture_action_name, ros_gui_server.msg.OdomCaptureAction, execute_cb=self.odomCaptureCallback, auto_start=False) # Setup Odometry Capture server for recording /nav_msgs/Odometry messages on demand
+        self.odomClearServer = actionlib.SimpleActionServer(self.clear_action_name, ros_gui_server.msg.OdomClearAction, execute_cb=self.odomClearCallback, auto_start=False) # Setup Odometry Clear server for clearing all odometry entries
         self.rvizMarkerServer = rospy.Publisher("/ros_gui_server/marker_server", Marker, queue_size=10)
         
         # Starting actions
         self.odomCaptureServer.start()
+        self.odomClearServer.start()
 
     # Callback method for our nav_msgs/Odometry subscriber
     def odomRecieveCallback(self, data):
@@ -69,8 +74,6 @@ class gui_server():
         else: # exactly 1 sample is to be taken
             appendOdom = self.currentOdom
             self.odomArray.append(appendOdom) # Appending the latest nav_msgs/Odometry reading to the array/list
-            self._odomCaptureFeedback.percent_complete = 100.00
-            self.odomCaptureServer.publish_feedback(self._odomCaptureFeedback)
             success = (self.odomArray[len(self.odomArray) - 1].header.stamp == appendOdom.header.stamp)
             self._odomCaptureResult.exit_status = success
 
@@ -119,11 +122,63 @@ class gui_server():
             self.rvizMarkerServer.publish(newPoints)
             self.rvizMarkerServer.publish(newLineStrip)
 
+            # Feedback publish
+            self._odomCaptureFeedback.percent_complete = 100.00
+            self.odomCaptureServer.publish_feedback(self._odomCaptureFeedback)
+
             # complete the action callback
             rospy.loginfo('%s: Succeeded' % self.capture_action_name)
             self.odomArrayPrint()
             self.odomCaptureServer.set_succeeded(self._odomCaptureResult)
     
+    def odomClearCallback(self, data):
+
+        # Determine if there are any markers to clear
+        if len(self.odomArray) < 1:
+
+            # if there are not points in the array, do nothing and pass an exit failure
+            
+            # Feedback publish
+            self._odomClearFeedback.percent_complete = 0.00
+            self.odomClearServer.publish_feedback(self._odomClearFeedback)
+
+            # complete action callback
+            rospy.loginfo('%s: Failed: No Markers to delete' % self.clear_action_name)
+            self._odomClearResult.exit_status = False
+            self.odomClearServer.set_aborted(self._odomClearResult)
+
+        else:
+
+            # Clear Odometry Array and Points Array
+            self.odomArray = []
+            self.points = []
+
+            # Set up delete markers
+            deletePoints = Marker()
+            deleteLineStrip = Marker()
+            deletePoints.header.frame_id = deleteLineStrip.header.frame_id = "/odom"
+            deletePoints.header.stamp = deleteLineStrip.header.stamp = rospy.get_rostime()
+            deletePoints.ns = deleteLineStrip.ns = "/ros_gui_server/marker_server"
+            deletePoints.action = deleteLineStrip.action = Marker.DELETEALL
+            
+            # set up Marker message IDs
+            deletePoints.id = 0
+            deleteLineStrip.id = 1
+
+            # finally, publish the delete markers
+            self.rvizMarkerServer.publish(deletePoints)
+            self.rvizMarkerServer.publish(deleteLineStrip)
+
+            # Feedback publish
+            self._odomClearFeedback.percent_complete = 100.00
+            self.odomClearServer.publish_feedback(self._odomClearFeedback)
+
+            # complete action callback
+            rospy.loginfo('%s: Succeeded' % self.clear_action_name)
+            self._odomClearResult.exit_status = True
+            self.odomClearServer.set_succeeded(self._odomClearResult)
+
+
     def odomArrayPrint(self):
 
         for i in range(len(self.odomArray)):

@@ -70,6 +70,7 @@ add_action_files(
   action
   FILES
   OdomCapture.action
+  OdomClear.action
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -169,7 +170,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 install(PROGRAMS
-  scripts/robot_gui_server.py
+  scripts/ros_gui_server_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

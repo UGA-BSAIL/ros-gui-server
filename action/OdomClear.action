@@ -1,0 +1,8 @@
+# Goal definition, in this case, a boolean
+bool delete
+---
+# Result definition, in this case, a boolean to indicate exit_status
+bool exit_status
+---
+# Feedback definition, in this case, a progress percentage for the markers being deleted
+float32 percent_complete

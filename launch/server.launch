@@ -3,7 +3,7 @@
     <arg name="odom_topic" default="/odometry/filtered"/>
     <arg name="address" default="0.0.0.0"/>
     <arg name="port" default="9090"/>
-    <node pkg="ros_gui_server" type="robot_gui_server.py" name="robot_gui_server" args="$(arg odom_topic)" respawn="true" required="false"/>
+    <!-- <node pkg="ros_gui_server" type="ros_gui_server_node.py" name="ros_gui_server_node" args="$(arg odom_topic)" respawn="true" required="false"/> -->
     <node pkg="tf2_web_republisher" type="tf2_web_republisher" name="tf2_web_republisher"/>
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" required="false"/>
     <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" respawn="true" required="false"/>
