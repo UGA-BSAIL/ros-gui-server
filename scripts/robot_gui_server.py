@@ -8,6 +8,8 @@ import rospy
 import roslib
 import actionlib
 from nav_msgs.msg import Odometry
+from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Point
 import ros_gui_server.msg
 
 class gui_server():
@@ -22,7 +24,10 @@ class gui_server():
         # Initializing class variables
         self.currentOdom = Odometry()
         self.odomArray = []
-        self.capture_action_name = "/odom_capture"
+        self.capture_action_name = "/ros_gui_server/odom_capture"
+
+        # Set up persistent Point array for passing to new messages 
+        self.points = []
 
         # Command Line Arguments
         if len(argv) > 1:
@@ -33,6 +38,7 @@ class gui_server():
         # Subscriptions and action setup
         self.odomSubscriber = rospy.Subscriber(self.odometryTopic, Odometry, self.odomRecieveCallback) # Subscribe the the Odometry topic for Odometry message recieving
         self.odomCaptureServer = actionlib.SimpleActionServer(self.capture_action_name, ros_gui_server.msg.OdomCaptureAction, execute_cb=self.odomCaptureCallback, auto_start=False) # Setup Odometry Capture server for recording /nav_msgs/Odometry messages on demand
+        self.rvizMarkerServer = rospy.Publisher("/ros_gui_server/marker_server", Marker, queue_size=10)
         
         # Starting actions
         self.odomCaptureServer.start()
@@ -47,22 +53,9 @@ class gui_server():
         
         # Setting up variables
         appendOdom = Odometry()
-        pose_position_x_sum = 0.00
-        pose_position_y_sum = 0.00
-        pose_position_z_sum = 0.00
-        pose_orientation_x_sum = 0.00
-        pose_orientation_y_sum = 0.00
-        pose_orientation_z_sum = 0.00
-        pose_orientation_w_sum = 0.00
-        twist_linear_x_sum = 0.00
-        twist_linear_y_sum = 0.00
-        twist_linear_z_sum = 0.00
-        twist_angular_x_sum = 0.00
-        twist_angular_y_sum = 0.00
-        twist_angular_z_sum = 0.00
-
-        # helper variables
-        r = rospy.Rate(49)
+        newPoint = Point()
+        newPoints = Marker()
+        newLineStrip = Marker()
         success = True
         
         if goal.samples == 0: # 0 samples are to be taken, simply interrupt the callback
@@ -80,102 +73,56 @@ class gui_server():
             self.odomCaptureServer.publish_feedback(self._odomCaptureFeedback)
             success = (self.odomArray[len(self.odomArray) - 1].header.stamp == appendOdom.header.stamp)
             self._odomCaptureResult.exit_status = success
+
+            # set up new Point message for the points array and append it
+            newPoint.x = appendOdom.pose.pose.position.x
+            newPoint.y = appendOdom.pose.pose.position.y
+            newPoint.z = appendOdom.pose.pose.position.z
+            self.points.append(newPoint)
+
+            # set up Marker message common parameters
+            newPoints.header.frame_id = newLineStrip.header.frame_id = "/odom"
+            newPoints.header.stamp = newLineStrip.header.stamp = rospy.get_rostime()
+            newPoints.ns = newLineStrip.ns = "/ros_gui_server/marker_server"
+            newPoints.action = newLineStrip.action = Marker.ADD
+            newPoints.pose.orientation.w = newLineStrip.pose.orientation.w = 1.0
+            
+            # set up Marker message type
+            newPoints.type = Marker.POINTS
+            newLineStrip.type = Marker.LINE_STRIP
+
+            # set up Marker message ID
+            newPoints.id = 0
+            newLineStrip.id = 1
+
+            # set up newPoints scaling and color
+            newPoints.scale.x = 0.2
+            newPoints.scale.y = 0.2
+            newPoints.color.a = 0.95
+            newPoints.color.r = 0.502
+            newPoints.color.g = 0.0
+            newPoints.color.b = 0.126
+
+            # set up newLineStrip scaling and color
+            newLineStrip.scale.x = 0.2
+            newLineStrip.scale.y = 0.2
+            newLineStrip.color.a = 1.0
+            newLineStrip.color.r = 0.729
+            newLineStrip.color.g = 0.047
+            newLineStrip.color.b = 0.184
+
+            # give latest points array
+            newPoints.points = self.points
+            newLineStrip.points = self.points
+
+            # finally, publish the new markers
+            self.rvizMarkerServer.publish(newPoints)
+            self.rvizMarkerServer.publish(newLineStrip)
+
+            # complete the action callback
             rospy.loginfo('%s: Succeeded' % self.capture_action_name)
             self.odomArrayPrint()
             self.odomCaptureServer.set_succeeded(self._odomCaptureResult)
-
-        # else: # an arbitrary number of samples >1 is to be taken, averaging their values (pose, twist, and their corresponding covariances)
-        #     for i in range (1, goal.samples):
-
-        #         # Check that preempt has not been requested by the client
-        #         if self.odomCaptureServer.is_preempt_requested():
-        #             rospy.loginfo('%s: Preempted' % self.capture_action_name)
-        #             success = False
-        #             break
-
-        #         # Summing the float64 standalone variables
-        #         pose_position_x_sum = pose_position_x_sum + self.currentOdom.pose.pose.position.x
-        #         pose_position_y_sum = pose_position_y_sum + self.currentOdom.pose.pose.position.y
-        #         pose_position_z_sum = pose_position_z_sum + self.currentOdom.pose.pose.position.z
-        #         pose_orientation_x_sum = pose_orientation_x_sum + self.currentOdom.pose.pose.orientation.x
-        #         pose_orientation_y_sum = pose_orientation_y_sum + self.currentOdom.pose.pose.orientation.y
-        #         pose_orientation_z_sum = pose_orientation_z_sum + self.currentOdom.pose.pose.orientation.z
-        #         pose_orientation_w_sum = pose_orientation_w_sum + self.currentOdom.pose.pose.orientation.w
-        #         twist_linear_x_sum = twist_linear_x_sum + self.currentOdom.twist.twist.linear.x
-        #         twist_linear_y_sum = twist_linear_y_sum + self.currentOdom.twist.twist.linear.y
-        #         twist_linear_z_sum = twist_linear_z_sum + self.currentOdom.twist.twist.linear.z
-        #         twist_angular_x_sum = twist_angular_x_sum + self.currentOdom.twist.twist.angular.x
-        #         twist_angular_y_sum = twist_angular_y_sum + self.currentOdom.twist.twist.angular.y
-        #         twist_angular_z_sum = twist_angular_z_sum + self.currentOdom.twist.twist.angular.z
-
-        #         # Averaging the Pose covariances
-        #         if i is 1:
-        #             pose_covariance = self.currentOdom.pose.covariance
-
-        #         else:
-        #             covariance_pair = (pose_covariance, self.currentOdom.pose.covariance)
-        #             for i,j in covariance_pair:
-        #                 returnTuple.append((i+j)/2)
-        #             pose_covariance = returnTuple 
-        #         # Averaging the Twist covariances
-        #         if i is 1:
-        #             twist_covariance = self.currentOdom.twist.covariance
-
-        #         else:
-        #             covariance_pair = (pose_covariance, self.currentOdom.twist.covariance)
-        #             for i,j in covariance_pair:
-        #                 returnTuple.append((i+j)/2)
-        #             twist_covariance = returnTuple
-
-        #         # Updating and publishing the feedback
-        #         self._odomCaptureFeedback.percent_complete = float(i/goal.samples) * 100
-        #         self.odomCaptureServer.publish_feedback(self._odomCaptureFeedback)
-                
-        #         # ROS sleep call to make sure we're sampling at a lower rate than the Odometry publisher
-        #         r.sleep()
-            
-        #     # Finding averages for the float64 standalone variables (divide the sums by the number of samples)
-        #     pose_position_x_avg = pose_position_x_sum/goal.samples
-        #     pose_position_y_avg = pose_position_y_sum/goal.samples
-        #     pose_position_z_avg = pose_position_z_sum/goal.samples
-        #     pose_orientation_x_avg = pose_orientation_x_sum/goal.samples
-        #     pose_orientation_y_avg = pose_orientation_y_sum/goal.samples
-        #     pose_orientation_z_avg = pose_orientation_z_sum/goal.samples
-        #     pose_orientation_w_avg = pose_orientation_w_sum/goal.samples
-        #     twist_linear_x_avg = twist_linear_x_sum/goal.samples
-        #     twist_linear_y_avg = twist_linear_y_sum/goal.samples
-        #     twist_linear_z_avg = twist_linear_z_sum/goal.samples
-        #     twist_angular_x_avg = twist_angular_x_sum/goal.samples
-        #     twist_angular_y_avg = twist_angular_y_sum/goal.samples
-        #     twist_angular_z_avg = twist_angular_z_sum/goal.samples
-
-        #     # Preparing the Odometry message to be appended
-        #     appendOdom = self.currentOdom # Giving the append Odometry message the current header and child_frame_id
-
-        #     # Pose with Covariance
-        #     appendOdom.pose.pose.position.x = pose_position_x_avg
-        #     appendOdom.pose.pose.position.y = pose_position_y_avg
-        #     appendOdom.pose.pose.position.z = pose_position_z_avg
-        #     appendOdom.pose.pose.orientation.x = pose_orientation_x_avg
-        #     appendOdom.pose.pose.orientation.y = pose_orientation_y_avg
-        #     appendOdom.pose.pose.orientation.z = pose_orientation_z_avg
-        #     appendOdom.pose.pose.orientation.w = pose_orientation_w_avg
-        #     appendOdom.pose.covariance = pose_covariance
-
-        #     # Twist with covariance
-        #     appendOdom.twist.twist.linear.x = twist_linear_x_avg
-        #     appendOdom.twist.twist.linear.y = twist_linear_y_avg
-        #     appendOdom.twist.twist.linear.z = twist_linear_z_avg
-        #     appendOdom.twist.twist.angular.x = twist_angular_x_avg
-        #     appendOdom.twist.twist.angular.y = twist_angular_y_avg
-        #     appendOdom.twist.twist.angular.z = twist_angular_z_avg
-        #     appendOdom.twist.covariance = twist_covariance
-
-        #     if success:
-        #         self.odomArray.append(appendOdom)
-        #         self._odomCaptureResult.exit_status = success
-        #         rospy.loginfo('%s: Succeeded' % self.capture_action_name)
-        #         self.odomCaptureServer.set_succeeded(self._odomCaptureResult)
     
     def odomArrayPrint(self):
 
@@ -190,9 +137,9 @@ class gui_server():
 
 
 def main(args):
-    rospy.init_node('robot_gui_server') # init node
+    rospy.init_node('ros_gui_server_node') # init node
     server = gui_server(args)
-    print "gui_server is ready to serve!"
+    print "ros_gui_server_node is ready to serve!"
 
 if __name__ == "__main__":
     main(sys.argv)

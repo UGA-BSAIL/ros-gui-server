@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   nav_msgs
   sensor_msgs
+  visualization_msgs
   roscpp
   rospy
   genmsg
@@ -75,6 +76,7 @@ add_action_files(
 generate_messages(
   DEPENDENCIES
   actionlib_msgs
+  visualization_msgs
   std_msgs
   nav_msgs
   sensor_msgs
