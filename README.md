@@ -9,9 +9,19 @@ Setting up the ros_gui_server package in your ROS environment can get a bit invo
 
 The first few step are fairly standard, simply clone this repository in a catkin workspace on the host device (robot), run catkin_make to generate a new setup.bash, source it from the devel folder, and execute the command `rosdep install ros_gui_server` to gather all of the dependancies.
 
-#### URDF Server Setup 
+#### Launch File Setup
 
-In order a to serve the URDF of your robot to the GUI in the browser, its files need to be served via the http protocol. To accomplish this, we can set up an Apache2 webserver on the host device and make some modifications to it.
+After you've downloaded and catkin_maked the ros_gui_server package, you'll also need to configure it's launch file, found at `<your catkin workspace>/src/ros_gui_server/launch/server.launch`.
+
+This file launches the ros_gui_server node, as well as a robot_state_publisher, joint_state_publisher, and tf2_web_republisher node, while also including the launch files for the ros-bridge websocket and your navigation stack's move_base launch file. 
+
+As noted by the comments in the launch file, you'll need to specify which nav_msgs/Odometry topic you're publishing on for the server to subscribe to, an IP and Port for the rosbridge websocket (leave this default), and you'll also need to specify the package in which your move_base launch file resides. Where it says $(find husky_navigation) you can replace 'husky_navigation' with the name of your <robot_navigation> package.
+
+After that, just make sure to include this launch file within any robot_bringup launch files you wish to run the ros_gui_server with.
+
+#### Apache Server Setup
+
+In order a to serve the URDF and the GUI in the browser, its files need to be served via the http protocol. To accomplish this, we can set up an Apache2 webserver on the host device and make some modifications to it.
 
 First, we need to download Apache to the host device:
 
@@ -60,9 +70,20 @@ sudo rm /var/www/html/index.html
 sudo mkdir /var/www/html/urdf
 sudo cp -r <robot_description>/ /var/www/html/urdf/
 ```
+Next, we'll pull the ros_gui_client repository to also be served by our apache server.
+
+```
+sudo mkdir /var/www/html/gui
+sudo git clone git@github.com:UGA-BSAIL/ros_gui_client.git /var/www/html/gui/
+```
 
 Then, we can reload the apache server to serve the new content, and our apache server config is complete!
 
 ```
 sudo service apache2 reload
 ```
+After that you should be all configured!
+
+## Usage
+
+Please refer to the UGA-BSAIL/ros_gui_client repository README.md for more information on using the ros_gui_client froma browser.
