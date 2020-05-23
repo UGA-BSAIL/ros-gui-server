@@ -15,7 +15,7 @@ After you've downloaded and catkin_maked the ros_gui_server package, you'll also
 
 This file launches the ros_gui_server node, as well as a robot_state_publisher, joint_state_publisher, and tf2_web_republisher node, while also including the launch files for the ros-bridge websocket and your navigation stack's move_base launch file. 
 
-As noted by the comments in the launch file, you'll need to specify which nav_msgs/Odometry topic you're publishing on for the server to subscribe to, an IP and Port for the rosbridge websocket (leave this default), and you'll also need to specify the package in which your move_base launch file resides. Where it says $(find husky_navigation) you can replace 'husky_navigation' with the name of your <robot_navigation> package.
+As noted by the comments in the launch file, you'll need to specify which nav_msgs/Odometry topic you're publishing on for the server to subscribe to, an IP and Port for the rosbridge websocket (leave this default), and you'll also need to specify the package in which your move_base launch file resides. Where it says $(find husky_navigation) you can replace 'husky_navigation' with the name of your `<robot_navigation>` package.
 
 After that, just make sure to include this launch file within any robot_bringup launch files you wish to run the ros_gui_server with.
 
@@ -49,7 +49,7 @@ Then, we need to add our header modification mentioned previously, start by open
 sudo nano gui.conf
 ```
 
-Scroll down to near the end of the <VirtualHost> tag and add the following line into it:
+Scroll down to near the end of the `<VirtualHost>` tag and add the following line into it:
 
 ```
 Header set Access-Control-Allow-Origin *
@@ -63,7 +63,7 @@ sudo a2ensite gui.conf
 sudo service apache2 restart
 ```
 
-Now that our apache server is properly configured, we need to copy the URDF (typically in a robot_description package) into the content directory for the site. To do this simply execute these commands, replacing <robot-description> with the path to your robot_description package.
+Now that our apache server is properly configured, we need to copy the URDF (typically in a robot_description package) into the content directory for the site. To do this simply execute these commands, replacing `<robot-description>` with the path to your robot_description package.
   
 ```
 sudo rm /var/www/html/index.html
