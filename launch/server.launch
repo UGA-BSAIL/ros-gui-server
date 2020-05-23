@@ -1,8 +1,16 @@
 <?xml version="1.0"?>
 <launch>
+
+    <!-- REQUIRED: Specifies the  nav_msgs/Odometry topic to subscribe to -->
     <arg name="odom_topic" default="/odometry/filtered"/>
+    <!-- Specifies the IP address on which the ROS-Bridge Server will be hosted-->
     <arg name="address" default="0.0.0.0"/>
+    <!-- Specifies the Port on which the ROS-Bridge Server will be hosted -->
     <arg name="port" default="9090"/>
+    <!-- REQUIRED: Specifies the navigation package and launch file to use. Note: A move_base action server or move_base_simple/goals subscriber is required for auto-navigation -->
+    <!-- To configure this for your robot, simply replace 'husky_navigation' with whatever your navigation package is called. -->
+    <include file = "$(find husky_navigation)/launch/move_base.launch"></include>
+
     <node pkg="ros_gui_server" type="ros_gui_server_node.py" name="ros_gui_server_node" args="$(arg odom_topic)" respawn="true" required="false"/>
     <node pkg="tf2_web_republisher" type="tf2_web_republisher" name="tf2_web_republisher"/>
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" required="false"/>
@@ -11,6 +19,4 @@
         <arg name="address" value="$(arg address)"/>
         <arg name="port" value="$(arg port)"/>
     </include>
-    <include file = "$(find husky_description)/launch/description.launch"></include>
-    <include file = "$(find husky_navigation)/launch/move_base.launch"></include>
 </launch>
