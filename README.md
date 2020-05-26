@@ -52,7 +52,7 @@ sudo nano gui.conf
 Scroll down to near the end of the `<VirtualHost>` tag and add the following line into it:
 
 ```
-Header set Access-Control-Allow-Origin *
+Header set Access-Control-Allow-Origin '*'
 ```
 
 The above line allows the URDF to be served to the client's browser without causing any security errors, after saving the gui.conf file, we'll need to disable the default site, enable our new one, and restart the apache server.
@@ -74,7 +74,8 @@ Next, we'll pull the ros_gui_client repository to also be served by our apache s
 
 ```
 sudo mkdir /var/www/html/gui
-sudo git clone git@github.com:UGA-BSAIL/ros_gui_client.git /var/www/html/gui/
+sudo chmod 777 /var/www/html/gui
+git clone git@github.com:UGA-BSAIL/ros_gui_client.git /var/www/html/gui/
 ```
 
 Then, we can reload the apache server to serve the new content, and our apache server config is complete!
